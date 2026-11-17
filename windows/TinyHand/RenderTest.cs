@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -30,6 +31,26 @@ internal static class RenderTest
             Console.WriteLine($"rendered {name}");
         }
 
+        // Thumbnails, made the way the app makes them: in the background at launch.
+        var names = PointerStyle.AllCases.Select(s => s.AssetName).OfType<string>().ToList();
+        var loaded = new DispatcherFrame();
+        HandAsset.PreloadThumbnails(names, () => loaded.Continue = false);
+        Dispatcher.PushFrame(loaded);
+        var grid = new System.Windows.Controls.WrapPanel { Width = 9 * 72, Background = Brushes.White };
+        int missing = 0;
+        foreach (string name in names)
+        {
+            BitmapSource? thumb = HandAsset.Thumbnail(name);
+            if (thumb == null || IsBlank(thumb))
+            {
+                missing++;
+                Console.WriteLine($"blank thumbnail: {name}");
+            }
+            grid.Children.Add(new System.Windows.Controls.Image { Source = thumb, Width = 64, Height = 64, Margin = new Thickness(4) });
+        }
+        Save(grid, 9 * 72, (names.Count + 8) / 9 * 72, Path.Combine(folder, "thumbnails.png"));
+        Console.WriteLine($"rendered thumbnails, {names.Count - missing} of {names.Count} drawn");
+
         var toolbar = new Toolbar();
         toolbar.Select(PointerStyle.Saved);
 
@@ -56,6 +77,20 @@ internal static class RenderTest
         }
         welcome.Close();
         Console.WriteLine("done");
+    }
+
+    private static bool IsBlank(BitmapSource image)
+    {
+        var pixels = new byte[image.PixelWidth * image.PixelHeight * 4];
+        new FormatConvertedBitmap(image, PixelFormats.Bgra32, null, 0).CopyPixels(pixels, image.PixelWidth * 4, 0);
+        for (int i = 3; i < pixels.Length; i += 4)
+        {
+            if (pixels[i] > 0)
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static void Pump()

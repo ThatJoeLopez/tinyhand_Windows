@@ -74,7 +74,7 @@ internal static class HandMaker
         BitmapSource source;
         try
         {
-            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            using Stream stream = PngCleaner.Open(path);
             BitmapFrame frame = BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad).Frames[0];
             if (Opaque.Contains(frame.Format))
             {

@@ -85,7 +85,7 @@ internal sealed class WelcomeWindow : Window
         };
         card.MouseLeftButtonDown += (_, e) =>
         {
-            if (e.ButtonState == MouseButtonState.Pressed)
+            if (!e.Handled && e.ButtonState == MouseButtonState.Pressed)
             {
                 DragMove();
             }
