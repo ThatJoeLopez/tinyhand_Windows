@@ -31,11 +31,27 @@ internal static class Program
             Log.Write($"crash: {e.ExceptionObject}");
             CursorHider.Show();
         };
+        bool reported = false;
         app.DispatcherUnhandledException += (_, e) =>
         {
             Log.Write($"unhandled: {e.Exception}");
             e.Handled = true;
+            if (!reported)
+            {
+                // Say so once, rather than leave a tray icon that silently does nothing.
+                reported = true;
+                MessageBox.Show(
+                    $"TinyHand ran into a problem:\n\n{e.Exception.Message}\n\nDetails are in {Log.Path}",
+                    "TinyHand", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         };
+
+        i = Array.IndexOf(args, "--render-test");
+        if (i >= 0 && args.Length > i + 1)
+        {
+            RenderTest.Run(args[i + 1]);
+            return 0;
+        }
 
         if (args.Contains("--click-test"))
         {
