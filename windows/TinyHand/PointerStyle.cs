@@ -497,7 +497,11 @@ internal sealed class HandAsset
 
     public static BitmapSource LoadBitmap(string path)
     {
-        using Stream stream = PngCleaner.Open(path);
+        if (PngCleaner.TryDecode(path) is BitmapSource own)
+        {
+            return own;
+        }
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
         var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
         BitmapSource frame = decoder.Frames[0];
         BitmapSource converted = frame.Format == PixelFormats.Bgra32 ? frame : new FormatConvertedBitmap(frame, PixelFormats.Bgra32, null, 0);

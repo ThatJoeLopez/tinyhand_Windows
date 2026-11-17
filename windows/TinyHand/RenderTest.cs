@@ -31,8 +31,39 @@ internal static class RenderTest
             Console.WriteLine($"rendered {name}");
         }
 
-        // Thumbnails, made the way the app makes them: in the background at launch.
         var names = PointerStyle.AllCases.Select(s => s.AssetName).OfType<string>().ToList();
+
+        // TinyHand's own PNG reader must give the same pixels as the system decoder.
+        foreach (string name in names)
+        {
+            string? path = Paths.Asset(name + ".png");
+            BitmapSource? own = path == null ? null : PngCleaner.TryDecode(path);
+            if (path == null || own == null)
+            {
+                Console.WriteLine($"own decoder skipped {name}");
+                continue;
+            }
+            using var stream = File.OpenRead(path);
+            BitmapSource system = new FormatConvertedBitmap(
+                BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad).Frames[0],
+                PixelFormats.Bgra32, null, 0);
+            var a = new byte[own.PixelWidth * own.PixelHeight * 4];
+            var b = new byte[a.Length];
+            own.CopyPixels(a, own.PixelWidth * 4, 0);
+            system.CopyPixels(b, system.PixelWidth * 4, 0);
+            int diff = 0;
+            for (int k = 0; k < a.Length; k++)
+            {
+                diff = Math.Max(diff, Math.Abs(a[k] - b[k]));
+            }
+            if (diff > 0)
+            {
+                Console.WriteLine($"decoders differ on {name}: max {diff}");
+            }
+        }
+        Console.WriteLine("compared decoders");
+
+        // Thumbnails, made the way the app makes them: in the background at launch.
         var loaded = new DispatcherFrame();
         HandAsset.PreloadThumbnails(names, () => loaded.Continue = false);
         Dispatcher.PushFrame(loaded);

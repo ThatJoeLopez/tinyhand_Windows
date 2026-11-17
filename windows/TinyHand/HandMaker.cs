@@ -74,7 +74,11 @@ internal static class HandMaker
         BitmapSource source;
         try
         {
-            using Stream stream = PngCleaner.Open(path);
+            if (PngCleaner.TryDecode(path) is BitmapSource own)
+            {
+                return Finish(own);
+            }
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
             BitmapFrame frame = BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad).Frames[0];
             if (Opaque.Contains(frame.Format))
             {
@@ -86,6 +90,11 @@ internal static class HandMaker
         {
             throw new Problem("That file isn't an image TinyHand can read.");
         }
+        return Finish(source);
+    }
+
+    private static (BitmapSource image, uint ink) Finish(BitmapSource source)
+    {
         Pixels pixels = Read(source);
         Check(pixels);
         BitmapSource composed = Compose(source, pixels) ?? throw new Problem("TinyHand couldn't put that hand on a stick.");
