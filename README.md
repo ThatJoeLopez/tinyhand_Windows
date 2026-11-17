@@ -15,6 +15,8 @@ A tiny hand on a stick that points at things on your Mac screen.
 
 macOS 13 or later, Apple Silicon and Intel.
 
+**Windows 10 and 11:** see [windows/README.md](windows/README.md) for the Windows port.
+
 ## Install
 
 Open `TinyHand.dmg`, drag TinyHand to Applications and allow **Accessibility** when asked. It needs that to turn your clicks into taps. TinyHand updates itself.
