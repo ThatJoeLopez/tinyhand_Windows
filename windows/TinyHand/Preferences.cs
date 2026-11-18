@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization.Metadata;
 using System.Windows.Media;
 using Microsoft.Win32;
 
@@ -173,6 +174,13 @@ internal static class Preferences
 
     private static string FilePath => Path.Combine(Paths.Data, "settings.json");
 
+    // JsonNode needs an explicit resolver to write values made with JsonValue.Create<T>.
+    private static readonly JsonSerializerOptions WriteOptions = new()
+    {
+        WriteIndented = true,
+        TypeInfoResolver = new DefaultJsonTypeInfoResolver(),
+    };
+
     private static JsonObject Store
     {
         get
@@ -203,7 +211,7 @@ internal static class Preferences
         {
             Directory.CreateDirectory(Paths.Data);
             string tmp = FilePath + ".tmp";
-            File.WriteAllText(tmp, Store.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+            File.WriteAllText(tmp, Store.ToJsonString(WriteOptions));
             File.Move(tmp, FilePath, overwrite: true);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)

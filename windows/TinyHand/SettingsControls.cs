@@ -217,7 +217,14 @@ internal static class Controls
         };
         b.MouseEnter += (_, _) => b.Opacity = 0.88;
         b.MouseLeave += (_, _) => b.Opacity = 1;
-        b.MouseLeftButtonUp += (_, _) => action();
+        // Claim the press, so a draggable parent (like the welcome card) doesn't start a
+        // window drag that swallows the release.
+        b.MouseLeftButtonDown += (_, e) => e.Handled = true;
+        b.MouseLeftButtonUp += (_, e) =>
+        {
+            e.Handled = true;
+            action();
+        };
         return b;
     }
 
@@ -228,7 +235,14 @@ internal static class Controls
         b.TextWrapping = TextWrapping.NoWrap;
         b.MouseEnter += (_, _) => b.TextDecorations = TextDecorations.Underline;
         b.MouseLeave += (_, _) => b.TextDecorations = null;
-        b.MouseLeftButtonUp += (_, _) => action();
+        // Claim the press, so a draggable parent (like the welcome card) doesn't start a
+        // window drag that swallows the release.
+        b.MouseLeftButtonDown += (_, e) => e.Handled = true;
+        b.MouseLeftButtonUp += (_, e) =>
+        {
+            e.Handled = true;
+            action();
+        };
         return b;
     }
 
