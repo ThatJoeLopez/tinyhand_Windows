@@ -226,6 +226,10 @@ internal sealed class HandAsset
         HandAsset? asset = image == null ? null : Measure(image);
         if (asset == null)
         {
+            if (image != null)
+            {
+                Log.Write($"could not find the hand in {name}: {Describe(image)}");
+            }
             return null;
         }
         Cache[name] = asset;
@@ -275,7 +279,12 @@ internal sealed class HandAsset
                 try
                 {
                     BitmapSource? image = LoadImage(name);
-                    BitmapSource? thumb = image == null ? null : Measure(image)?.MakeThumbnail();
+                    HandAsset? measured = image == null ? null : Measure(image);
+                    if (image != null && measured == null)
+                    {
+                        Log.Write($"could not find the hand in {name}: {Describe(image)}");
+                    }
+                    BitmapSource? thumb = measured?.MakeThumbnail();
                     if (thumb != null)
                     {
                         lock (ThumbGate)
@@ -492,7 +501,24 @@ internal sealed class HandAsset
                 Log.Write($"could not read {path}: {e.Message}");
             }
         }
+        Log.Write($"no image for {name}; looked in {string.Join(", ", candidates)} and {Paths.AppDir}assets");
         return null;
+    }
+
+    /// Size, format and how much of the image is solid, for the log when a hand can't be used.
+    private static string Describe(BitmapSource image)
+    {
+        BitmapSource bgra = image.Format == PixelFormats.Bgra32 ? image : new FormatConvertedBitmap(image, PixelFormats.Bgra32, null, 0);
+        var pixels = new byte[bgra.PixelWidth * bgra.PixelHeight * 4];
+        bgra.CopyPixels(pixels, bgra.PixelWidth * 4, 0);
+        int solid = 0, clear = 0;
+        for (int i = 3; i < pixels.Length; i += 4)
+        {
+            if (pixels[i] > 128) solid++;
+            if (pixels[i] == 0) clear++;
+        }
+        int total = pixels.Length / 4;
+        return $"{image.PixelWidth}x{image.PixelHeight} {image.Format}, {100.0 * solid / total:F1}% solid, {100.0 * clear / total:F1}% clear";
     }
 
     public static BitmapSource LoadBitmap(string path)
